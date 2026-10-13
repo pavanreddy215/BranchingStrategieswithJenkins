@@ -678,6 +678,8 @@
             <div class="container">
                 <h1>Holiday Collections Premium Picks</h1>
                 <p>Discover the latest trends in fashion, technology and accessories — curated just for you. Enjoy limited-time deals and free shipping on selected items.</p>
+                <h1>The Winter Collection</h1>
+                <p>Discover the season’s coziest essentials, thoughtful gifts, and standout winter finds — curated just for you. Enjoy limited-time deals and free shipping on selected items.</p>
                 <div>
                     <button class="btn btn-primary" id="shopNow">Shop Now <em class="fas fa-arrow-right"></em></button>
                     <button class="btn btn-ghost" id="exploreDeals">Explore Deals</button>
