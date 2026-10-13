@@ -534,6 +534,10 @@
         .search:focus-within { border-color: #c56b45; box-shadow: 0 0 0 3px rgba(197,107,69,.12); }
         .icon-btn, .cart { color: var(--primary); }
         .cart-count { background: var(--accent); color: #fff; }
+        .cart-count { background: var(--accent); color: #fff; }
+        .wishlist-toggle { position: relative; padding: 7px 9px; }
+        .wishlist-count { position: absolute; top: -3px; right: -2px; min-width: 17px; height: 17px; padding: 0 4px; border-radius: 99px; background: var(--accent); color: #fff; font: 700 10px/17px Inter, sans-serif; text-align: center; }
+        .wish-btn.is-saved { color: #c56b45; background: #fbf0e9; border-color: #e7b79e; }
         .hero { position: relative; isolation: isolate; min-height: 560px; margin: 18px auto 0; width: calc(100% - 36px); max-width: 1600px; border-radius: 26px; overflow: hidden; text-align: left; justify-content: flex-start; background-image: linear-gradient(90deg, rgba(19,35,29,.83) 0%, rgba(19,35,29,.56) 44%, rgba(19,35,29,.08) 100%), url('https://images.unsplash.com/photo-1555529669-e69e7aa0ba9a?auto=format&fit=crop&w=1800&q=85'); }
         .hero .container { max-width: var(--container); margin: 0 auto; }
         .hero h1 { max-width: 650px; font-size: clamp(42px, 5.2vw, 72px); line-height: 1.03; letter-spacing: -.055em; margin: 0 0 20px; }
@@ -648,6 +652,7 @@
                 <div class="header-actions" role="group" aria-label="Header actions">
                     <a class="icon-btn" title="Account" href="#"><em class="far fa-user"></em></a>
                     <a class="icon-btn" title="Wishlist" href="#"><em class="far fa-heart"></em></a>
+                    <button class="icon-btn wishlist-toggle" id="wishlistToggle" type="button" title="Show wishlist" aria-label="Show wishlist"><em class="far fa-heart"></em><span class="wishlist-count" id="wishlistCount">0</span></button>
                     <a class="cart" href="#" id="cartBtn" title="View cart" aria-label="Cart">
                         <em class="fas fa-shopping-cart"></em>
                         <span class="cart-count" id="cartCount">0</span>
@@ -947,6 +952,8 @@
         const searchInput = document.getElementById('searchInput');
 
         let cartCount = 0;
+        let wishlist = new Set(JSON.parse(localStorage.getItem("nexusWishlist") || "[]"));
+        let wishlistMode = false;
 
         function renderCategories() {
             categoriesGrid.innerHTML = '';
@@ -972,6 +979,10 @@
 
         function renderProducts(list) {
             productsGrid.innerHTML = '';
+            if (!list.length) {
+                productsGrid.innerHTML = `<p class="muted" style="grid-column:1/-1;text-align:center;padding:36px 12px">No saved items yet. Tap a heart on any product to add it here.</p>`;
+                return;
+            }
             list.forEach(p => {
                 const el = document.createElement('article');
                 el.className = 'product';
@@ -992,9 +1003,14 @@
                     <div class="product-footer">
                         <button class="add-btn" data-id="${p.id}"><em class="fas fa-cart-plus"></em> Add</button>
                         <button class="wish-btn" aria-label="Add to wishlist"><em class="far fa-heart"></em></button>
+                        <button class="wish-btn ${wishlist.has(p.id) ? 'is-saved' : ''}" data-wish-id="${p.id}" aria-label="${wishlist.has(p.id) ? 'Remove from' : 'Add to'} wishlist" aria-pressed="${wishlist.has(p.id)}"><em class="${wishlist.has(p.id) ? 'fas' : 'far'} fa-heart"></em></button>
                     </div>
                 `;
                 productsGrid.appendChild(el);
+            });
+
+            productsGrid.querySelectorAll(".wish-btn").forEach(btn => {
+                btn.addEventListener("click", () => toggleWishlist(Number(btn.dataset.wishId)));
             });
 
             // attach listeners to add buttons
@@ -1015,6 +1031,17 @@
                 '"': '&quot;',
                 "'": '&#39;'
             } [s]));
+        }
+
+        function toggleWishlist(productId) {
+            if (wishlist.has(productId)) wishlist.delete(productId);
+            else wishlist.add(productId);
+            localStorage.setItem("nexusWishlist", JSON.stringify([...wishlist]));
+            document.getElementById("wishlistCount").textContent = wishlist.size;
+            const query = searchInput.value.trim().toLowerCase();
+            let visible = PRODUCTS.filter(p => !query || p.title.toLowerCase().includes(query) || p.category.toLowerCase().includes(query));
+            if (wishlistMode) visible = visible.filter(p => wishlist.has(p.id));
+            renderProducts(visible);
         }
 
         function addToCart(productId) {
@@ -1051,6 +1078,18 @@
             );
             renderProducts(filtered);
         }
+
+        document.getElementById("wishlistToggle").addEventListener("click", () => {
+            wishlistMode = !wishlistMode;
+            const button = document.getElementById("wishlistToggle");
+            button.setAttribute("aria-pressed", String(wishlistMode));
+            button.title = wishlistMode ? "Show all products" : "Show wishlist";
+            const query = searchInput.value.trim().toLowerCase();
+            let visible = PRODUCTS.filter(p => !query || p.title.toLowerCase().includes(query) || p.category.toLowerCase().includes(query));
+            if (wishlistMode) visible = visible.filter(p => wishlist.has(p.id));
+            renderProducts(visible);
+            document.getElementById("prod-title").scrollIntoView({ behavior: "smooth", block: "start" });
+        });
 
         // --- Search handling ---
         document.getElementById('searchBtn').addEventListener('click', () => filterProducts(searchInput.value));
@@ -1128,9 +1167,13 @@
             renderCategories();
             renderProducts(PRODUCTS);
             updateCartCount();
+            document.getElementById("wishlistCount").textContent = wishlist.size;
             document.getElementById('year').textContent = new Date().getFullYear();
         })();
     </script>
 </body>
 
 </html>
+
+
+
